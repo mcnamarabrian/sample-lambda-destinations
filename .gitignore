@@ -1,0 +1,4 @@
+.aws-sam
+.venv
+response.json
+samconfig.toml

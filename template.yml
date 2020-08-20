@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: SAM template to demonstrate the use of Lambda Destinations
+
+Parameters:
+  RecipientEmailAddress:
+    Type: String
+    AllowedPattern: '[^\s@]+@[^\s@]+\.[^\s@]+'
+    ConstraintDescription: Enter a valid email address
+
+Resources:
+  SuccessTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - Protocol: email
+          Endpoint: !Ref RecipientEmailAddress
+
+  FailureTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - Protocol: email
+          Endpoint: !Ref RecipientEmailAddress
+
+  SimpleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.6
+      CodeUri: ./src/
+      Handler: index.handler
+      Policies:
+        - SNSPublishMessagePolicy:
+            TopicName:
+              !GetAtt SuccessTopic.TopicName
+        - SNSPublishMessagePolicy:
+            TopicName:
+              !GetAtt FailureTopic.TopicName
+      EventInvokeConfig:
+        DestinationConfig:
+          OnSuccess:
+            Type: SNS
+            Destination: !Ref SuccessTopic
+          OnFailure:
+            Type: SNS
+            Destination: !Ref FailureTopic
